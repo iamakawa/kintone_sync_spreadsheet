@@ -43,7 +43,7 @@ function writeRecordsToSheet(sheetName, appId, apiToken, query, fieldNames) {
   var sheet = ss.getSheetByName(sheetName);
   var records = getKintoneRecord(appId, apiToken, query);
   records.forEach(record => {
-    var rowValues = fieldNames.map(fieldName => record[fieldName] && record[fieldName].value ? record[fieldName].value : '');
+    var rowValues = fieldNames.map(fieldName => record[fieldName] && record[fieldName].value ? String(record[fieldName].value) : '');
     var desRow = findRow(sheet, Number(record['$id'].value), 1) || sheet.getLastRow() + 1;
     sheet.getRange(desRow, 1, 1, rowValues.length).setValues([rowValues]);
   });
