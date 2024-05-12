@@ -43,7 +43,21 @@ function writeRecordsToSheet(sheetName, appId, apiToken, query, fieldNames) {
   var sheet = ss.getSheetByName(sheetName);
   var records = getKintoneRecord(appId, apiToken, query);
   records.forEach(record => {
-    var rowValues = fieldNames.map(fieldName => record[fieldName] && record[fieldName].value ? String(record[fieldName].value) : '');
+    var rowValues = fieldNames.map(fieldName => {
+      // record[fieldName] が存在し、valueがあるか確認
+      if (record[fieldName] && record[fieldName].value !== undefined) {
+        // valueが配列の場合、要素をコンマで繋げる
+        if (Array.isArray(record[fieldName].value)) {
+          return record[fieldName].value.join(', ');
+        } else {
+          // 配列ではない場合はそのまま文字列に変換
+          return String(record[fieldName].value);
+        }
+      } else {
+        // record[fieldName] が存在しないかvalueがない場合は空文字
+        return '';
+      }
+    });
     var desRow = findRow(sheet, Number(record['$id'].value), 1) || sheet.getLastRow() + 1;
     sheet.getRange(desRow, 1, 1, rowValues.length).setValues([rowValues]);
   });
@@ -136,8 +150,25 @@ function processAddOrUpdateRecord(data, sheet, config, action) {
   var recordId = record.$id.value;
   var values = [recordId];
 
-  config.fields.forEach(fieldName => {
-    values.push(record[fieldName] && record[fieldName].value ? record[fieldName].value : '');
+  config.fields.forEach(function(fieldName) {
+    let valueToAdd = ''; // デフォルト値として空文字を設定
+    if (record[fieldName] && record[fieldName].value !== undefined) {
+      // record[fieldName].valueが配列かどうかを確認
+      if (Array.isArray(record[fieldName].value)) {
+        if (record[fieldName].value.length === 0) {
+          // 配列が空の場合は空文字を設定
+          valueToAdd = '';
+        } else {
+          // 配列の値がある場合はコンマで繋ぐ
+          valueToAdd = record[fieldName].value.join(', ');
+        }
+      } else {
+        // 配列ではない場合は元の値をそのまま設定
+        valueToAdd = record[fieldName].value;
+      }
+    }
+    // 決定された値をvaluesに追加
+    values.push(valueToAdd);
   });
 
   if (action === 'ADD_RECORD') {
